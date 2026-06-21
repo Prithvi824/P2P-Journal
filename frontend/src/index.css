@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import "tailwindcss";
+
+/* ── Design tokens ──────────────────────────────────────────── */
+@theme {
+  --color-bg:              #080e1d;
+  --color-surface:         #0d1525;
+  --color-card:            #111827;
+  --color-card-alt:        #141e2e;
+  --color-primary:         #00e5a8;
+  --color-primary-dim:     rgba(0,229,168,0.12);
+  --color-secondary:       #4f8cff;
+  --color-secondary-dim:   rgba(79,140,255,0.12);
+  --color-text:            #e2eaf6;
+  --color-text-dim:        #b0bdd4;
+  --color-muted:           #7a8ba5;
+  --color-border:          #1e2d45;
+  --color-border-subtle:   rgba(255,255,255,0.05);
+  --color-success:         #00e676;
+  --color-success-dim:     rgba(0,230,118,0.12);
+  --color-warning:         #ffb020;
+  --color-warning-dim:     rgba(255,176,32,0.12);
+  --color-danger:          #ff4d4d;
+  --color-danger-dim:      rgba(255,77,77,0.12);
+
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  --shadow-sm:             0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:             0 4px 16px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
+  --shadow-lg:             0 8px 32px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-glow-primary:   0 0 20px rgba(0,229,168,0.2);
+  --shadow-glow-secondary: 0 0 20px rgba(79,140,255,0.2);
+
+  --transition:      0.18s ease;
+  --transition-slow: 0.35s ease;
+
+  --font-sans: Inter, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-size-xs:   11px;
+  --font-size-sm:   12px;
+  --font-size-base: 13px;
+  --font-size-md:   14px;
+  --font-size-lg:   16px;
+  --font-size-xl:   20px;
+  --font-size-2xl:  26px;
+  --font-size-3xl:  36px;
+
+  --animate-spin:           spin 0.65s linear infinite;
+  --animate-bell-pulse:     bellPulse 2s ease-in-out infinite;
+  --animate-glow-pulse:     glowPulse 2s ease-in-out infinite;
+  --animate-overlay-show:   overlayShow 0.15s ease;
+  --animate-content-show:   contentShow 0.2s ease;
+  --animate-accordion-down: accordionDown 0.2s ease;
+  --animate-accordion-up:   accordionUp 0.2s ease;
+  --animate-select-down:    selectDown 0.15s ease;
+  --animate-fade-up:        fadeUp 0.3s ease;
+}
+
+/* ── Base overrides ─────────────────────────────────────────── */
+@layer base {
+  html, body {
+    min-height: 100vh;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  #root { min-height: 100vh; }
+  a { color: inherit; text-decoration: none; }
+  button { cursor: pointer; font-family: inherit; }
+  input, select, textarea { font-family: inherit; }
+}
+
+/* ── Global utilities ───────────────────────────────────────── */
+@layer utilities {
+  .num, [data-num] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: var(--color-bg); }
+::-webkit-scrollbar-thumb  { background: var(--color-border); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+
+/* ── Radix z-index fix ──────────────────────────────────────── */
+[data-radix-popper-content-wrapper] { z-index: 200 !important; }
+
+/* ── Keyframes ──────────────────────────────────────────────── */
+@keyframes overlayShow {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes contentShow {
+  from { opacity: 0; transform: translate(-50%,-48%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+}
+@keyframes accordionDown {
+  from { height: 0; opacity: 0; }
+  to   { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes accordionUp {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to   { height: 0; opacity: 0; }
+}
+@keyframes selectDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+  50%       { opacity: 0.5; box-shadow: 0 0 12px currentColor; }
+}
+@keyframes bellPulse {
+  0%, 100% { transform: rotate(0deg); }
+  20%       { transform: rotate(-15deg); }
+  40%       { transform: rotate(15deg); }
+  60%       { transform: rotate(-8deg); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
