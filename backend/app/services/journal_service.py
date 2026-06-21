@@ -34,10 +34,16 @@ from app.services.computed_fields import (
 )
 
 
-async def _get_cycle_or_404(session: AsyncSession, cycle_id: uuid.UUID) -> TradeCycle:
-    """Fetch a TradeCycle by id, raising 404 if not found."""
+async def _get_cycle_or_404(
+    session: AsyncSession, cycle_id: uuid.UUID, user_id: uuid.UUID
+) -> TradeCycle:
+    """Fetch a TradeCycle by id scoped to the given user, raising 404 if not found."""
     result = (
-        await session.execute(select(TradeCycle).where(TradeCycle.id == cycle_id))
+        await session.execute(
+            select(TradeCycle).where(
+                TradeCycle.id == cycle_id, TradeCycle.user_id == user_id
+            )
+        )
     ).scalars()
     cycle = result.first()
     if cycle is None:
@@ -113,18 +119,26 @@ async def _recompute_cycle(
     session.add(cycle)
 
 
-async def get_all_cycles(session: AsyncSession) -> list[TradeCycleListItem]:
-    """Return lightweight summaries of all trade cycles for the dashboard."""
+async def get_all_cycles(
+    session: AsyncSession, user_id: uuid.UUID
+) -> list[TradeCycleListItem]:
+    """Return lightweight summaries of all trade cycles owned by the given user."""
     result = (
-        await session.execute(select(TradeCycle).order_by(TradeCycle.created_at.desc()))
+        await session.execute(
+            select(TradeCycle)
+            .where(TradeCycle.user_id == user_id)
+            .order_by(TradeCycle.created_at.desc())
+        )
     ).scalars()
     cycles = result.all()
     return [TradeCycleListItem.model_validate(c) for c in cycles]
 
 
-async def get_cycle_by_id(session: AsyncSession, cycle_id: uuid.UUID) -> TradeCycleRead:
+async def get_cycle_by_id(
+    session: AsyncSession, cycle_id: uuid.UUID, user_id: uuid.UUID
+) -> TradeCycleRead:
     """Return the full TradeCycle with nested phases and orders."""
-    cycle = await _get_cycle_or_404(session, cycle_id)
+    cycle = await _get_cycle_or_404(session, cycle_id, user_id)
 
     buy = None
     deposit = None
@@ -197,28 +211,29 @@ async def get_cycle_by_id(session: AsyncSession, cycle_id: uuid.UUID) -> TradeCy
     )
 
 
-async def create_cycle(session: AsyncSession) -> TradeCycleRead:
-    """Create a new TradeCycle with an empty BuyingPhase shell."""
+async def create_cycle(session: AsyncSession, user_id: uuid.UUID) -> TradeCycleRead:
+    """Create a new TradeCycle with an empty BuyingPhase shell, owned by user_id."""
     buy_phase = BuyingPhase()
     session.add(buy_phase)
     await session.flush()
 
-    cycle = TradeCycle(buy_phase_id=buy_phase.id)
+    cycle = TradeCycle(buy_phase_id=buy_phase.id, user_id=user_id)
     session.add(cycle)
     await session.commit()
     await session.refresh(cycle)
     await session.refresh(buy_phase)
 
-    return await get_cycle_by_id(session, cycle.id)
+    return await get_cycle_by_id(session, cycle.id, user_id)
 
 
 async def update_cycle(
     session: AsyncSession,
     cycle_id: uuid.UUID,
+    user_id: uuid.UUID,
     payload: TradeCycleUpdate,
 ) -> TradeCycleRead:
     """Apply partial updates to a cycle and its phases, recomputing all derived fields."""
-    cycle = await _get_cycle_or_404(session, cycle_id)
+    cycle = await _get_cycle_or_404(session, cycle_id, user_id)
     _check_immutable(cycle)
 
     buy = (
@@ -410,17 +425,19 @@ async def update_cycle(
         await _recompute_cycle(session, cycle, buy, deposit, sale)
 
     await session.commit()
-    return await get_cycle_by_id(session, cycle_id)
+    return await get_cycle_by_id(session, cycle_id, user_id)
 
 
-async def delete_cycle(session: AsyncSession, cycle_id: uuid.UUID) -> None:
+async def delete_cycle(
+    session: AsyncSession, cycle_id: uuid.UUID, user_id: uuid.UUID
+) -> None:
     """Delete a cycle and all its phases and orders regardless of status.
 
     Uses explicit Core DELETE ordering because trade_cycles holds FK columns
     pointing TO the phase tables — the cycle row must be removed first before
     the phases themselves can be deleted (inverted FK vs ORM-ownership topology).
     """
-    cycle = await _get_cycle_or_404(session, cycle_id)
+    cycle = await _get_cycle_or_404(session, cycle_id, user_id)
 
     buy_phase_id = cycle.buy_phase_id
     deposit_phase_id = cycle.deposit_phase_id

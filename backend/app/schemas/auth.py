@@ -16,3 +16,9 @@ class TokenResponse(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+
+
+class UserMeResponse(BaseModel):
+    """Current authenticated user's public profile."""
+
+    username: str

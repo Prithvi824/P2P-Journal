@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useAuthStore } from '../../store/authStore';
 import Button from './Button';
 
@@ -8,6 +9,7 @@ interface LayoutProps { children: ReactNode }
 export default function Layout({ children }: LayoutProps) {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const { data: user } = useCurrentUser();
 
   function handleLogout() {
     logout();
@@ -36,7 +38,16 @@ export default function Layout({ children }: LayoutProps) {
           >
             Dashboard
           </Link>
+          <Link
+            to="/status"
+            className="px-3 py-1.5 rounded-sm text-muted text-base font-medium transition-[color,background] hover:text-text hover:bg-white/5"
+          >
+            Status
+          </Link>
         </nav>
+        {user?.username && (
+          <span className="text-sm text-muted font-medium">{user.username}</span>
+        )}
         <Button variant="ghost" size="sm" onClick={handleLogout}>Logout</Button>
       </header>
       <main className="flex-1 p-7 max-w-360 w-full mx-auto">

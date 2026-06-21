@@ -20,6 +20,11 @@ class TradeCycle(TimestampedModel):
 
     __tablename__ = "trade_cycles"
 
+    # Owner — every cycle belongs to exactly one user
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+
     # Foreign keys to phase tables
     buy_phase_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("buying_phases.id")
