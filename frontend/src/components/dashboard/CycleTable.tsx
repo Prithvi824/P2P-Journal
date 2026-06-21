@@ -65,7 +65,6 @@ function CycleRow({ cycle }: { cycle: TradeCycleListItem }) {
             size="sm"
             loading={isPending}
             onClick={() => setShowConfirm(true)}
-            disabled={cycle.status === "completed"}
           >
             Delete
           </Button>

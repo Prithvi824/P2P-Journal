@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 # 3rd party imports
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete as sa_delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # local party imports
@@ -414,11 +414,34 @@ async def update_cycle(
 
 
 async def delete_cycle(session: AsyncSession, cycle_id: uuid.UUID) -> None:
-    """Delete a cycle and all its associated phases and orders.
+    """Delete a cycle and all its phases and orders regardless of status.
 
-    ORM cascade handles child deletion: cycle → phases → sale orders.
+    Uses explicit Core DELETE ordering because trade_cycles holds FK columns
+    pointing TO the phase tables — the cycle row must be removed first before
+    the phases themselves can be deleted (inverted FK vs ORM-ownership topology).
     """
     cycle = await _get_cycle_or_404(session, cycle_id)
-    _check_immutable(cycle)
-    session.delete(cycle)
+
+    buy_phase_id = cycle.buy_phase_id
+    deposit_phase_id = cycle.deposit_phase_id
+    sale_phase_id = cycle.sale_phase_id
+
+    # 1. sale_orders references sale_phases — delete orders first
+    if sale_phase_id:
+        await session.execute(
+            sa_delete(SaleOrder).where(SaleOrder.sale_phase_id == sale_phase_id)
+        )
+
+    # 2. trade_cycles row holds all FK refs to phases — delete it to clear them
+    await session.execute(sa_delete(TradeCycle).where(TradeCycle.id == cycle_id))
+
+    # 3. phases can now be deleted safely
+    await session.execute(sa_delete(BuyingPhase).where(BuyingPhase.id == buy_phase_id))
+    if deposit_phase_id:
+        await session.execute(
+            sa_delete(DepositPhase).where(DepositPhase.id == deposit_phase_id)
+        )
+    if sale_phase_id:
+        await session.execute(sa_delete(SalePhase).where(SalePhase.id == sale_phase_id))
+
     await session.commit()

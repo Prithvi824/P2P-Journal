@@ -68,6 +68,6 @@ async def remove_cycle(
     session: AsyncSession = Depends(get_session),
     _: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Delete a trade cycle and all its phases. Completed cycles cannot be deleted."""
+    """Delete a trade cycle and all its phases and orders."""
     await delete_cycle(session, cycle_id)
     return {"message": "Cycle deleted successfully"}
