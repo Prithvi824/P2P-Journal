@@ -15,7 +15,9 @@ from app.database import create_db_and_tables
 from app.middleware.logging_middleware import LoggingMiddleware
 from app.services.alert_service import run_price_alert_loop
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s"
+)
 
 settings = get_settings()
 
@@ -32,6 +34,14 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     """Build and return the configured FastAPI application."""
     app = FastAPI(title="P2P Trade Journal", version="1.0.0", lifespan=lifespan)
+
+    @app.get("/health", tags=["health"])
+    async def health_check():
+        return {
+            "status": "healthy",
+            "service": "p2p-trade-journal",
+            "version": "1.0.0",
+        }
 
     # CORS
     app.add_middleware(
